@@ -14,20 +14,21 @@
 ## 部署
 1. 安装 Golang 及依赖包
 2. 修改配置
-    1. cofing.go: MachineId（第一个服务机器可以不修改）
-    1. cofing.go: RedisAddr（可选，不使用Redis检查MachineId机制可以不修改）
-    1. cofing.go: MysqlDataSourceNaming（可选，不使用Redis检查MachineId机制可以不修改）
-3. 启动程序
+    1. cofing.go: MachineId（第一个服务机器可以不操作）
+    2. cofing.go: RedisAddr（可选，不使用Redis检查MachineId机制可以不操作）
+    3. cofing.go: MysqlDataSourceNaming（可选，不使用MySQL检查MachineId机制可以不操作）
+3. MySQL建表（可选，不使用MySQL检查MachineId机制可以不操作）
+4. 启动程序
 
 ## 依赖包
 
 1. HTTP: github.com/gin-gonic/gin
 2. MySQL: github.com/go-sql-driver/mysql
 3. Redis: github.com/gomodule/redigo
+3. 日志: github.com/sirupsen/logrus
 
 ## TODO
 
-- [ ] 日志优化
 - [ ] 支持 RPC 调用
 - [ ] 使用包管理工具
 - [ ] IP白名单
@@ -44,3 +45,5 @@
 > https://github.com/go-sql-driver/mysql
 > 
 > https://github.com/gomodule/redigo
+>
+> https://github.com/sirupsen/logrus

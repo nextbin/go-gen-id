@@ -1,13 +1,12 @@
 package gen
 
 import (
-	"bytes"
 	"database/sql"
 	"errors"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nextbin/go-id-gen/src/base"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"reflect"
 	"regexp"
@@ -19,27 +18,32 @@ func CheckMachineId() (valid bool, err error) {
 	valid = true
 	if base.MachineId < 0 || base.MachineId > (1<<MachineIdBit) {
 		valid = false
-		fmt.Println("MachineId error")
+		log.WithField("MachineId", base.MachineId).Warn("MachineId error")
 		return
 	}
 	addrs, err := net.InterfaceAddrs()
 	if err != nil || len(addrs) == 0 {
-		fmt.Println("addrs error")
+		log.Warn("addrs error. ", err)
 		return false, err
 	}
-	var localIpBuffer = bytes.Buffer{}
+	var localIp = ""
 	for _, addr := range addrs {
 		if !strings.HasPrefix(addr.String(), "127.0.0.1") {
-			var matched bool
-			matched, err = regexp.MatchString("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}", addr.String())
+			matched, err := regexp.MatchString("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}", addr.String())
+			if err != nil {
+				log.Warn("regexp error")
+				return false, err
+			}
 			if matched {
-				localIpBuffer.WriteString(addr.String())
-				localIpBuffer.WriteString(",")
+				localIp = addr.String()
+				break
 			}
 		}
 	}
-	var localIp = localIpBuffer.String()[:localIpBuffer.Len()-1]
-	fmt.Printf("Local IP: %s, check machine id type: %d\n", localIp, base.CheckMachineIdType)
+	if localIp == "" {
+		return false, errors.New("cannot get local IP")
+	}
+	log.WithFields(log.Fields{"localIp": localIp, "checkType": base.CheckMachineIdType}).Info("check MachineId")
 	switch base.CheckMachineIdType {
 	case base.CheckMachineIdTypeMysql:
 		return CheckMachineIdByMysql(localIp)
@@ -58,20 +62,20 @@ func CheckMachineId() (valid bool, err error) {
 func CheckMachineIdByMysql(localIp string) (valid bool, err error) {
 	db, err := sql.Open("mysql", base.MysqlDataSourceNaming)
 	if err != nil {
-		fmt.Println("Connect to mysql server error", err)
+		log.Warn("Connect to mysql server error", err)
 		return false, err
 	}
 	defer func() {
 		err = db.Close()
 		if err != nil {
-			fmt.Println(err)
+			log.Warn(err)
 		}
 	}()
 	machine := new(base.Machine)
 	var rows = db.QueryRow("SELECT * FROM `nb_id_gen_machine` WHERE `ip`=?", localIp)
 	err = rows.Scan(&machine.Id, &machine.Ip, &machine.CreateTime)
 	if err != nil && err.Error() != "sql: no rows in result set" {
-		fmt.Println("SELECT error", err)
+		log.Warn("SELECT error", err)
 		return
 	}
 	if err == nil {
@@ -79,19 +83,17 @@ func CheckMachineIdByMysql(localIp string) (valid bool, err error) {
 	}
 	res, err := db.Exec("INSERT INTO `nb_id_gen_machine`(`id`,`ip`,`create_time`) VALUES (?,?,?)", base.MachineId, localIp, time.Now())
 	if err != nil {
-		fmt.Println("INSERT error", err)
+		log.Warn("INSERT error", err)
 		return
 	}
 	insertId, err := res.LastInsertId()
 	if err != nil {
-		fmt.Println("LastInsertId error", err)
+		log.Warn("LastInsertId error", err)
 		return
 	}
 	if int32(insertId) == base.MachineId {
 		return true, err
 	}
-	fmt.Println(insertId)
-	fmt.Println(base.MachineId)
 	return
 }
 
@@ -99,18 +101,18 @@ func CheckMachineIdByRedis(localIp string) (valid bool, err error) {
 	var c redis.Conn
 	c, err = redis.Dial("tcp", base.RedisAddr)
 	if err != nil {
-		fmt.Println("Connect to redis server error", err)
+		log.Warn("Connect to redis server error", err)
 		return
 	}
 	defer func() {
 		err = c.Close()
 		if err != nil {
-			fmt.Println(err)
+			log.Warn(err)
 		}
 	}()
 	res, err := c.Do("HGET", base.RedisCheckMachineIdKey, localIp)
 	if err != nil {
-		fmt.Println("HGET error", err)
+		log.Warn("HGET error", err)
 		return
 	}
 	if res != nil {
@@ -120,15 +122,15 @@ func CheckMachineIdByRedis(localIp string) (valid bool, err error) {
 			for _, digit := range v {
 				realRes = realRes*10 + int32(digit-'0')
 			}
-			fmt.Printf("MachineId found in redis: %d, config: %d, IP: %s\n", realRes, base.MachineId, localIp)
+			log.WithFields(log.Fields{"found": realRes, "config": base.MachineId, "ip": localIp}).Info("MachineId compare")
 			return realRes == base.MachineId, err
 		}
-		fmt.Printf("Find redis type: %s\n", reflect.TypeOf(res))
+		log.Warnf("Find redis type: %s", reflect.TypeOf(res))
 		return res == base.MachineId, err
 	}
 	res, err = c.Do("HSETNX", base.RedisCheckMachineIdKey, localIp, base.MachineId)
 	if err != nil {
-		fmt.Println("HSETNX error", err)
+		log.Warn("HSETNX error", err)
 		return
 	}
 	switch v := res.(type) {
@@ -136,6 +138,6 @@ func CheckMachineIdByRedis(localIp string) (valid bool, err error) {
 		valid = int(v) == 1
 		return
 	}
-	fmt.Printf("Find redis type: %s\n", reflect.TypeOf(res))
+	log.Warnf("Find redis type: %s", reflect.TypeOf(res))
 	return
 }
