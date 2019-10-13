@@ -15,24 +15,19 @@ import (
 )
 
 func CheckMachineId() (valid bool, err error) {
-	valid = true
 	if base.MachineId < 0 || base.MachineId > (1<<MachineIdBit) {
-		valid = false
-		log.WithField("MachineId", base.MachineId).Warn("MachineId error")
-		return
+		log.WithField("MachineId", base.MachineId).Fatal("MachineId error")
 	}
 	addrs, err := net.InterfaceAddrs()
 	if err != nil || len(addrs) == 0 {
-		log.Warn("addrs error. ", err)
-		return false, err
+		log.Fatal("addrs error. ", err)
 	}
 	var localIp = ""
 	for _, addr := range addrs {
 		if !strings.HasPrefix(addr.String(), "127.0.0.1") {
 			matched, err := regexp.MatchString("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}", addr.String())
 			if err != nil {
-				log.Warn("regexp error")
-				return false, err
+				log.Fatal("regexp error")
 			}
 			if matched {
 				localIp = addr.String()
@@ -41,7 +36,7 @@ func CheckMachineId() (valid bool, err error) {
 		}
 	}
 	if localIp == "" {
-		return false, errors.New("cannot get local IP")
+		log.Fatal("cannot get local IP")
 	}
 	log.WithFields(log.Fields{"localIp": localIp, "checkType": base.CheckMachineIdType}).Info("check MachineId")
 	switch base.CheckMachineIdType {
@@ -54,16 +49,15 @@ func CheckMachineId() (valid bool, err error) {
 	case base.CheckMachineIdTypeMongo:
 		return false, errors.New("Mongo DB is NOT supported. ")
 	case base.CheckMachineIdTypeNever:
-		return
+		return true, err
 	}
-	return
+	return false, err
 }
 
 func CheckMachineIdByMysql(localIp string) (valid bool, err error) {
 	db, err := sql.Open("mysql", base.MysqlDataSourceNaming)
 	if err != nil {
-		log.Warn("Connect to mysql server error", err)
-		return false, err
+		log.Fatal("Connect to mysql server error", err)
 	}
 	defer func() {
 		err = db.Close()
@@ -75,25 +69,21 @@ func CheckMachineIdByMysql(localIp string) (valid bool, err error) {
 	var rows = db.QueryRow("SELECT * FROM `nb_id_gen_machine` WHERE `ip`=?", localIp)
 	err = rows.Scan(&machine.Id, &machine.Ip, &machine.CreateTime)
 	if err != nil && err.Error() != "sql: no rows in result set" {
-		log.Warn("SELECT error", err)
-		return
+		log.Fatal("SELECT error", err)
 	}
 	if err == nil {
+		log.WithFields(log.Fields{"found": machine.Id, "config": base.MachineId, "ip": localIp}).Info("MachineId compare")
 		return machine.Id == base.MachineId, err
 	}
 	res, err := db.Exec("INSERT INTO `nb_id_gen_machine`(`id`,`ip`,`create_time`) VALUES (?,?,?)", base.MachineId, localIp, time.Now())
 	if err != nil {
-		log.Warn("INSERT error", err)
-		return
+		log.Fatal("INSERT error", err)
 	}
-	insertId, err := res.LastInsertId()
+	affected, err := res.RowsAffected()
 	if err != nil {
-		log.Warn("LastInsertId error", err)
-		return
+		log.Fatal("LastInsertId error", err)
 	}
-	if int32(insertId) == base.MachineId {
-		return true, err
-	}
+	valid = affected == 1
 	return
 }
 
@@ -101,8 +91,7 @@ func CheckMachineIdByRedis(localIp string) (valid bool, err error) {
 	var c redis.Conn
 	c, err = redis.Dial("tcp", base.RedisAddr)
 	if err != nil {
-		log.Warn("Connect to redis server error", err)
-		return
+		log.Fatal("Connect to redis server error", err)
 	}
 	defer func() {
 		err = c.Close()
@@ -112,8 +101,7 @@ func CheckMachineIdByRedis(localIp string) (valid bool, err error) {
 	}()
 	res, err := c.Do("HGET", base.RedisCheckMachineIdKey, localIp)
 	if err != nil {
-		log.Warn("HGET error", err)
-		return
+		log.Fatal("HGET error", err)
 	}
 	if res != nil {
 		var realRes int32 = 0
@@ -125,19 +113,18 @@ func CheckMachineIdByRedis(localIp string) (valid bool, err error) {
 			log.WithFields(log.Fields{"found": realRes, "config": base.MachineId, "ip": localIp}).Info("MachineId compare")
 			return realRes == base.MachineId, err
 		}
-		log.Warnf("Find redis type: %s", reflect.TypeOf(res))
+		log.Fatalf("Find redis type: %s", reflect.TypeOf(res))
 		return res == base.MachineId, err
 	}
 	res, err = c.Do("HSETNX", base.RedisCheckMachineIdKey, localIp, base.MachineId)
 	if err != nil {
-		log.Warn("HSETNX error", err)
-		return
+		log.Fatal("HSETNX error", err)
 	}
 	switch v := res.(type) {
 	case int64:
 		valid = int(v) == 1
 		return
 	}
-	log.Warnf("Find redis type: %s", reflect.TypeOf(res))
+	log.Fatalf("Find redis type: %s", reflect.TypeOf(res))
 	return
 }
