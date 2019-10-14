@@ -19,7 +19,24 @@
     3. cofing.go: MysqlDataSourceNaming（可选，不使用MySQL检查MachineId机制可以不操作）
     3. cofing.go: ServerFlag（可选，默认启动Gin、Grpc）
 3. MySQL建表（可选，不使用MySQL检查MachineId机制可以不操作）
-4. 启动程序
+4. 启动程序 ( go ./app )
+
+## 客户端调用示例
+1. HTTP
+    1. Json格式 http://localhost:11001/genId
+        ```json
+        {"code":0,"data":711833308626944,"message":""}
+        ```
+    2. 简单格式 http://localhost:11001/genId
+        ```
+        711833308626944
+        ```
+2. RPC
+    
+    [pb格式][go-id-gen-pb]
+    
+    [Golang Client 示例][golang-client-example]
+    
 
 ## 依赖包
 
@@ -65,3 +82,7 @@ Redis
 > https://developers.google.com/protocol-buffers/docs/gotutorial
 >
 > https://blog.csdn.net/u013210620/article/details/82684315
+
+[golang-client-example]: https://github.com/nextbin/go-gen-id/blob/master/test/main/rpc_grpc_test.go
+
+[go-id-gen-pb]: https://github.com/nextbin/go-gen-id/blob/master/resource/proto/gen.proto
