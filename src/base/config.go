@@ -31,14 +31,14 @@ const (
 	/**
 	日志文件
 	*/
-	LogFilePath = "go-id-gen.log"
+	LogFilePath = "go-gen-id.log"
 )
 const (
 	/**
 	Redis const var
 	*/
 	RedisAddr              = "127.0.0.1:6379"
-	RedisCheckMachineIdKey = "nb:go-id-gen:machine-id"
+	RedisCheckMachineIdKey = "nb:go-gen-id:machine-id"
 )
 const (
 	/**

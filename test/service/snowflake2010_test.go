@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"github.com/nextbin/go-id-gen/src/service"
+	"github.com/nextbin/go-gen-id/src/service"
 	"testing"
 	"time"
 )

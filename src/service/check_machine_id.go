@@ -5,7 +5,7 @@ import (
 	"errors"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gomodule/redigo/redis"
-	"github.com/nextbin/go-id-gen/src/base"
+	"github.com/nextbin/go-gen-id/src/base"
 	log "github.com/sirupsen/logrus"
 	"net"
 	"reflect"

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/nextbin/go-id-gen/src/service/pb"
+	"github.com/nextbin/go-gen-id/src/service/pb"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"os"

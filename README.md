@@ -1,4 +1,4 @@
-# go-id-gen
+# go-gen-id
 一个生成全局唯一ID的服务，支持 HTTP、RPC 调用。
 
 ## 理论能力

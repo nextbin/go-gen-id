@@ -2,7 +2,7 @@ package service
 
 import "time"
 import "sync"
-import "github.com/nextbin/go-id-gen/src/base"
+import "github.com/nextbin/go-gen-id/src/base"
 
 /**
 https://github.com/twitter-archive/snowflake/tree/snowflake-2010#solution
@@ -16,7 +16,7 @@ sequence number - 12 bits - rolls over every 4096 per machine (with protection t
 System Clock Dependency
 You should use NTP to keep your system clock accurate. Snowflake protects from non-monotonic clocks, i.e. clocks that run backwards. If your clock is running fast and NTP tells it to repeat a few milliseconds, snowflake will refuse to generate ids until a time that is after the last time we generated an id. Even better, run in a mode where ntp won't move the clock backwards. See http://wiki.dovecot.org/TimeMovedBackwards#Time_synchronization for tips on how to do this.
 
-在此基础上稍作优化，把时间戳减去项目创建时间，使得id-gen可以用多49年
+在此基础上稍作优化，把时间戳减去项目创建时间，使得gen-id可以用多49年
 */
 
 const (

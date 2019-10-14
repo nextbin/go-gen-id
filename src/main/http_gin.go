@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/nextbin/go-id-gen/src/base"
-	"github.com/nextbin/go-id-gen/src/service"
+	"github.com/nextbin/go-gen-id/src/base"
+	"github.com/nextbin/go-gen-id/src/service"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 )
