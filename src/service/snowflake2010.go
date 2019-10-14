@@ -1,4 +1,4 @@
-package gen
+package service
 
 import "time"
 import "sync"
@@ -31,7 +31,7 @@ var lastTime int64 = 0
 var seqNum int64 = 0
 var seqNumLock sync.Mutex
 
-func GenId() (id int64, code int32) {
+func GenId() (id int64, code int32, err error) {
 	//if base.MachineId < 0 || base.MachineId >= (1<<MachineIdBit) {
 	//	return base.CODE_MACHINE_ID_OVERFLOW
 	//}
@@ -39,7 +39,7 @@ func GenId() (id int64, code int32) {
 	var nowTime = now.Unix()*1000 + int64(now.Nanosecond()/1e6) - base.ZeroTime
 	if nowTime >= (1 << TimeBit) {
 		//时间戳超过 41 bit
-		return -1, base.CODE_TIME_OVERFLOW
+		return -1, base.CODE_TIME_OVERFLOW, nil
 	}
 	seqNumLock.Lock()
 	if nowTime != lastTime {
@@ -51,7 +51,7 @@ func GenId() (id int64, code int32) {
 	var curSeqNum = seqNum
 	seqNumLock.Unlock()
 	if seqNum > (1 << SeqNumBit) {
-		return -1, base.CODE_SEQ_NUM_OVERFLOW
+		return -1, base.CODE_SEQ_NUM_OVERFLOW, nil
 	}
-	return int64(nowTime<<timeOffset) + int64(base.MachineId<<machineIdOffset) + curSeqNum, base.CODE_SUCCESS
+	return int64(nowTime<<timeOffset) + int64(base.MachineId<<machineIdOffset) + curSeqNum, base.CODE_SUCCESS, nil
 }

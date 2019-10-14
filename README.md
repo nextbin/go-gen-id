@@ -17,19 +17,29 @@
     1. cofing.go: MachineId（第一个服务机器可以不操作）
     2. cofing.go: RedisAddr（可选，不使用Redis检查MachineId机制可以不操作）
     3. cofing.go: MysqlDataSourceNaming（可选，不使用MySQL检查MachineId机制可以不操作）
+    3. cofing.go: ServerFlag（可选，默认启动Gin、Grpc）
 3. MySQL建表（可选，不使用MySQL检查MachineId机制可以不操作）
 4. 启动程序
 
 ## 依赖包
 
-1. HTTP: github.com/gin-gonic/gin
-2. MySQL: github.com/go-sql-driver/mysql
-3. Redis: github.com/gomodule/redigo
-3. 日志: github.com/sirupsen/logrus
+```
+HTTP
+    github.com/gin-gonic/gin
+MySQL
+    github.com/go-sql-driver/mysql
+Redis
+    github.com/gomodule/redigo
+日志
+    github.com/sirupsen/logrus
+其他:
+    golang.org/x/sys
+    golang.org/x/text
+    google.golang.org/genproto/googleapis
+```
 
 ## TODO
 
-- [ ] 支持 RPC 调用
 - [ ] 使用包管理工具
 - [ ] IP白名单
 - [ ] 支持更多的 MachineId 检查方式（Redis-Sentinel、Mongo）
@@ -47,3 +57,11 @@
 > https://github.com/gomodule/redigo
 >
 > https://github.com/sirupsen/logrus
+>
+> https://grpc.io/docs/quickstart/go
+>
+> https://github.com/golang/protobuf
+>
+> https://developers.google.com/protocol-buffers/docs/gotutorial
+>
+> https://blog.csdn.net/u013210620/article/details/82684315

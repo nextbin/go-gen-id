@@ -6,13 +6,17 @@ const (
 	*/
 	MachineId int32 = 0
 	/**
-	HTTP 服务端口
+	HTTP-Gin 服务端口
 	*/
-	HttpPort = 11001
+	HttpGinPort = 11001
 	/**
-	RPC 服务端口
+	RPC-Grpc 服务端口
 	*/
-	RpcPort = 12001
+	RpcGrpcPort = 12001
+	/**
+	服务器类型
+	*/
+	ServerFlag = ServerFlagHttpGin | ServerFlagRpcGrpc
 	/**
 	为节省原始snowflake算法的时间戳可用范围，将时间戳减去项目第一次发布的时间戳
 	2019-10-13 00:00:00 +0800
@@ -23,7 +27,7 @@ const (
 	支持的检查方式：MySQL、Redis
 	未实现的检查方式：Redis-Sentinel、Mongo
 	*/
-	CheckMachineIdType int = CheckMachineIdTypeNever
+	CheckMachineIdType CheckMachineIdTypeEnum = CheckMachineIdTypeNever
 	/**
 	日志文件
 	*/

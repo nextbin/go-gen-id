@@ -1,4 +1,4 @@
-package gen
+package service
 
 import (
 	"database/sql"
