@@ -27,7 +27,7 @@
         ```json
         {"code":0,"data":711833308626944,"message":""}
         ```
-    2. 简单格式 http://localhost:11001/genId
+    2. 简单格式 http://localhost:11001/genId?pure=1
         ```
         711833308626944
         ```
