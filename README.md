@@ -49,6 +49,8 @@ Redis
     github.com/gomodule/redigo
 日志
     github.com/sirupsen/logrus
+RPC
+    google.golang.org/grpc
 其他:
     golang.org/x/sys
     golang.org/x/text
