@@ -1,7 +1,13 @@
 # go-gen-id
 一个生成全局唯一ID的服务，支持 HTTP、RPC 调用。
 
-## 理论能力
+## 功能
+- 生成全局唯一 ID 的多节点服务
+- 支持启动检查配置（依赖于Redis或MySQL）
+- 支持 HTTP、RPC 调用（不定项选择）
+- HTTP 支持白名单功能（依赖于MySQL）
+
+## 并发生成 ID 的理论能力
 - 支持最多1024个机器
 - 每毫秒每个机器生成4096个ID
 - 时间支持69年
@@ -18,8 +24,11 @@
     2. cofing.go: RedisAddr（可选，不使用Redis检查MachineId机制可以不操作）
     3. cofing.go: MysqlDataSourceNaming（可选，不使用MySQL检查MachineId机制可以不操作）
     3. cofing.go: ServerFlag（可选，默认启动Gin、Grpc）
-3. MySQL建表（可选，不使用MySQL检查MachineId机制可以不操作）
-4. 启动程序 ( go ./app )
+3. MySQL建表（可选。MySQL检查MachineId机制需要；HTTP IP白名单需要）
+4. 构建、启动
+    ```shell
+    go build src/main/app.go && ./app
+    ```
 
 ## 客户端调用示例
 1. HTTP
@@ -27,13 +36,13 @@
         ```json
         {"code":0,"data":711833308626944,"message":""}
         ```
-    2. 简单格式 http://localhost:11001/genId
+    2. 简单格式 http://localhost:11001/genId?pure=1
         ```
         711833308626944
         ```
 2. RPC
     
-    [pb格式][go-id-gen-pb]
+    [pb格式][go-gen-id-pb]
     
     [Golang Client 示例][golang-client-example]
     
@@ -58,7 +67,6 @@ Redis
 ## TODO
 
 - [ ] 使用包管理工具
-- [ ] IP白名单
 - [ ] 支持更多的 MachineId 检查方式（Redis-Sentinel、Mongo）
 
 ## 参考资料
@@ -85,4 +93,4 @@ Redis
 
 [golang-client-example]: https://github.com/nextbin/go-gen-id/blob/master/test/main/rpc_grpc_test.go
 
-[go-id-gen-pb]: https://github.com/nextbin/go-gen-id/blob/master/resource/proto/gen.proto
+[go-gen-id-pb]: https://github.com/nextbin/go-gen-id/blob/master/resource/proto/gen.proto

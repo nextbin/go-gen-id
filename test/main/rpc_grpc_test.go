@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/nextbin/go-gen-id/src/service/pb"
+	"github.com/nextbin/go-gen-id/src/server/rpc/rpc_grpc/pb"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"os"
@@ -23,8 +23,8 @@ func TestRpcGrpc(t *testing.T) {
 		log.Fatal(err)
 	}
 	defer conn.Close()
-	client := service_pb.NewGenClient(conn)
-	res, err := client.GenId(context.Background(), &service_pb.GenIdRequest{})
+	client := pb.NewGenClient(conn)
+	res, err := client.GenId(context.Background(), &pb.GenIdRequest{})
 	if err != nil {
 		log.Fatal(err)
 	}

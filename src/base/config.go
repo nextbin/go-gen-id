@@ -1,5 +1,7 @@
 package base
 
+import "github.com/nextbin/go-gen-id/src/domain/enum"
+
 const (
 	/**
 	【重要】机器ID，部署ID生成服务时需要修改该值
@@ -16,7 +18,7 @@ const (
 	/**
 	服务器类型
 	*/
-	ServerFlag = ServerFlagHttpGin | ServerFlagRpcGrpc
+	ServerFlag = enum.ServerFlagHttpGin | enum.ServerFlagRpcGrpc
 	/**
 	为节省原始snowflake算法的时间戳可用范围，将时间戳减去项目第一次发布的时间戳
 	2019-10-13 00:00:00 +0800
@@ -27,7 +29,7 @@ const (
 	支持的检查方式：MySQL、Redis
 	未实现的检查方式：Redis-Sentinel、Mongo
 	*/
-	CheckMachineIdType CheckMachineIdTypeEnum = CheckMachineIdTypeNever
+	CheckMachineIdType enum.CheckMachineIdTypeEnum = enum.CheckMachineIdTypeNever
 	/**
 	日志文件
 	*/
@@ -45,5 +47,5 @@ const (
 	MySQL const var
 	*/
 	//[username[:password]@][protocol[(address)]]/dbname[?param1=value1&...&paramN=valueN]
-	MysqlDataSourceNaming string = "root:root@tcp(localhost:3306)/go_id_gen?parseTime=true"
+	MysqlDataSourceNaming string = "root:root@tcp(localhost:3306)/go_gen_id?parseTime=true"
 )

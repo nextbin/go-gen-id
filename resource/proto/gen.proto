@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package service_pb;
+package pb;
 
-//protoc -I resource/proto/ --go_out=plugins=grpc:$GOPATH/src/github.com/nextbin/go-gen-id/src/service/pb gen.proto
+//protoc -I resource/proto/ --go_out=plugins=rpc_grpc:$GOPATH/src/github.com/nextbin/go-gen-id/src/server/component/gen/rpc_grpc/pb gen.proto
 
 service Gen {
     rpc GenId (GenIdRequest) returns (GenIdResponse) {

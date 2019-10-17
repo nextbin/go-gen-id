@@ -1,4 +1,4 @@
-package base
+package enum
 
 type CheckMachineIdTypeEnum int32
 

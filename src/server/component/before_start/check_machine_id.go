@@ -1,4 +1,4 @@
-package service
+package before_start
 
 import (
 	"database/sql"
@@ -6,6 +6,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nextbin/go-gen-id/src/base"
+	"github.com/nextbin/go-gen-id/src/domain"
+	"github.com/nextbin/go-gen-id/src/domain/enum"
+	"github.com/nextbin/go-gen-id/src/server/component/gen"
 	log "github.com/sirupsen/logrus"
 	"net"
 	"reflect"
@@ -15,7 +18,7 @@ import (
 )
 
 func CheckMachineId() (valid bool, err error) {
-	if base.MachineId < 0 || base.MachineId > (1<<MachineIdBit) {
+	if !gen.CheckMachineId(base.MachineId) {
 		log.WithField("MachineId", base.MachineId).Fatal("MachineId error")
 	}
 	addrs, err := net.InterfaceAddrs()
@@ -40,21 +43,21 @@ func CheckMachineId() (valid bool, err error) {
 	}
 	log.WithFields(log.Fields{"localIp": localIp, "checkType": base.CheckMachineIdType}).Info("check MachineId")
 	switch base.CheckMachineIdType {
-	case base.CheckMachineIdTypeMysql:
-		return CheckMachineIdByMysql(localIp)
-	case base.CheckMachineIdTypeRedis:
-		return CheckMachineIdByRedis(localIp)
-	case base.CheckMachineIdTypeRedisSentinel:
+	case enum.CheckMachineIdTypeMysql:
+		return checkMachineIdByMysql(localIp)
+	case enum.CheckMachineIdTypeRedis:
+		return checkMachineIdByRedis(localIp)
+	case enum.CheckMachineIdTypeRedisSentinel:
 		return false, errors.New("Reids sentinel is NOT supported. ")
-	case base.CheckMachineIdTypeMongo:
+	case enum.CheckMachineIdTypeMongo:
 		return false, errors.New("Mongo DB is NOT supported. ")
-	case base.CheckMachineIdTypeNever:
+	case enum.CheckMachineIdTypeNever:
 		return true, err
 	}
 	return false, err
 }
 
-func CheckMachineIdByMysql(localIp string) (valid bool, err error) {
+func checkMachineIdByMysql(localIp string) (valid bool, err error) {
 	db, err := sql.Open("mysql", base.MysqlDataSourceNaming)
 	if err != nil {
 		log.Fatal("Connect to mysql server error", err)
@@ -65,8 +68,8 @@ func CheckMachineIdByMysql(localIp string) (valid bool, err error) {
 			log.Warn(err)
 		}
 	}()
-	machine := new(base.Machine)
-	var rows = db.QueryRow("SELECT * FROM `nb_id_gen_machine` WHERE `ip`=?", localIp)
+	machine := new(domain.Machine)
+	var rows = db.QueryRow("SELECT * FROM `nb_gen_id_machine` WHERE `ip`=?", localIp)
 	err = rows.Scan(&machine.Id, &machine.Ip, &machine.CreateTime)
 	if err != nil && err.Error() != "sql: no rows in result set" {
 		log.Fatal("SELECT error", err)
@@ -75,7 +78,7 @@ func CheckMachineIdByMysql(localIp string) (valid bool, err error) {
 		log.WithFields(log.Fields{"found": machine.Id, "config": base.MachineId, "ip": localIp}).Info("MachineId compare")
 		return machine.Id == base.MachineId, err
 	}
-	res, err := db.Exec("INSERT INTO `nb_id_gen_machine`(`id`,`ip`,`create_time`) VALUES (?,?,?)", base.MachineId, localIp, time.Now())
+	res, err := db.Exec("INSERT INTO `nb_gen_id_machine`(`id`,`ip`,`create_time`) VALUES (?,?,?)", base.MachineId, localIp, time.Now())
 	if err != nil {
 		log.Fatal("INSERT error", err)
 	}
@@ -87,7 +90,7 @@ func CheckMachineIdByMysql(localIp string) (valid bool, err error) {
 	return
 }
 
-func CheckMachineIdByRedis(localIp string) (valid bool, err error) {
+func checkMachineIdByRedis(localIp string) (valid bool, err error) {
 	var c redis.Conn
 	c, err = redis.Dial("tcp", base.RedisAddr)
 	if err != nil {

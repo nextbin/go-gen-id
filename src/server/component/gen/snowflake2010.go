@@ -1,4 +1,4 @@
-package service
+package gen
 
 import "time"
 import "sync"
@@ -20,24 +20,28 @@ You should use NTP to keep your system clock accurate. Snowflake protects from n
 */
 
 const (
-	TimeBit         uint = 41
-	MachineIdBit    uint = 10
-	SeqNumBit       uint = 12
-	timeOffset      uint = MachineIdBit + SeqNumBit
-	machineIdOffset uint = SeqNumBit
+	timeBit         uint = 41
+	machineIdBit    uint = 10
+	seqNumBit       uint = 12
+	timeOffset      uint = machineIdBit + seqNumBit
+	machineIdOffset uint = seqNumBit
 )
 
 var lastTime int64 = 0
 var seqNum int64 = 0
 var seqNumLock sync.Mutex
 
+func CheckMachineId(machineId int32) (valid bool) {
+	if base.MachineId < 0 || base.MachineId > (1<<machineIdBit) {
+		return false
+	}
+	return true
+}
+
 func GenId() (id int64, code int32, err error) {
-	//if base.MachineId < 0 || base.MachineId >= (1<<MachineIdBit) {
-	//	return base.CODE_MACHINE_ID_OVERFLOW
-	//}
 	var now = time.Now()
 	var nowTime = now.Unix()*1000 + int64(now.Nanosecond()/1e6) - base.ZeroTime
-	if nowTime >= (1 << TimeBit) {
+	if nowTime >= (1 << timeBit) {
 		//时间戳超过 41 bit
 		return -1, base.CODE_TIME_OVERFLOW, nil
 	}
@@ -50,7 +54,7 @@ func GenId() (id int64, code int32, err error) {
 	}
 	var curSeqNum = seqNum
 	seqNumLock.Unlock()
-	if seqNum > (1 << SeqNumBit) {
+	if seqNum > (1 << seqNumBit) {
 		return -1, base.CODE_SEQ_NUM_OVERFLOW, nil
 	}
 	return int64(nowTime<<timeOffset) + int64(base.MachineId<<machineIdOffset) + curSeqNum, base.CODE_SUCCESS, nil
