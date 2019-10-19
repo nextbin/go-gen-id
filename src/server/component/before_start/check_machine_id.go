@@ -11,7 +11,6 @@ import (
 	"github.com/nextbin/go-gen-id/src/server/component/gen"
 	log "github.com/sirupsen/logrus"
 	"net"
-	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -107,27 +106,17 @@ func checkMachineIdByRedis(localIp string) (valid bool, err error) {
 		log.Fatal("HGET error", err)
 	}
 	if res != nil {
-		var realRes int32 = 0
-		switch v := res.(type) {
-		case []uint8:
-			for _, digit := range v {
-				realRes = realRes*10 + int32(digit-'0')
-			}
+		var realRes int32
+		for _, digit := range res.([]uint8) {
+			realRes = realRes*10 + int32(digit-'0')
 			log.WithFields(log.Fields{"found": realRes, "config": base.MachineId, "ip": localIp}).Info("MachineId compare")
-			return realRes == base.MachineId, err
 		}
-		log.Fatalf("Find redis type: %s", reflect.TypeOf(res))
-		return res == base.MachineId, err
+		return realRes == base.MachineId, err
 	}
 	res, err = c.Do("HSETNX", base.RedisCheckMachineIdKey, localIp, base.MachineId)
 	if err != nil {
 		log.Fatal("HSETNX error", err)
 	}
-	switch v := res.(type) {
-	case int64:
-		valid = int(v) == 1
-		return
-	}
-	log.Fatalf("Find redis type: %s", reflect.TypeOf(res))
+	valid = int(res.(int64)) == 1
 	return
 }
