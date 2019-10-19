@@ -1,6 +1,8 @@
 package base
 
-import "github.com/nextbin/go-gen-id/src/domain/enum"
+import (
+	"github.com/nextbin/go-gen-id/src/domain/enum"
+)
 
 const (
 	/**
@@ -23,7 +25,7 @@ const (
 	为节省原始snowflake算法的时间戳可用范围，将时间戳减去项目第一次发布的时间戳
 	2019-10-13 00:00:00 +0800
 	*/
-	ZeroTime int64 = 1570896000000
+	ZeroTimestamp int64 = 1570896000000
 	/**
 	检查机器ID是否冲突
 	支持的检查方式：MySQL、Redis

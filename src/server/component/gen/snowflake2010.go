@@ -1,6 +1,9 @@
 package gen
 
-import "time"
+import (
+	log "github.com/sirupsen/logrus"
+	"time"
+)
 import "sync"
 import "github.com/nextbin/go-gen-id/src/base"
 
@@ -25,37 +28,64 @@ const (
 	seqNumBit       uint = 12
 	timeOffset      uint = machineIdBit + seqNumBit
 	machineIdOffset uint = seqNumBit
+	seqNumOffset    uint = 0
+	//为避免类型转换导致性能下降，machineIdPureMask、seqNumPureMask、machineIdValue 也设置为 int64
+	timePureMask      int64 = (1 << timeBit) - 1
+	machineIdPureMask int64 = (1 << machineIdBit) - 1
+	seqNumPureMask    int64 = (1 << seqNumBit) - 1
+	machineIdValue    int64 = int64(base.MachineId) << machineIdOffset
 )
 
 var lastTime int64 = 0
 var seqNum int64 = 0
 var seqNumLock sync.Mutex
+var zeroTime time.Time
+
+func init() {
+	zeroTime = time.Unix(base.ZeroTimestamp/1e3, base.ZeroTimestamp%1e3*1e6)
+}
 
 func CheckMachineId(machineId int32) (valid bool) {
-	if base.MachineId < 0 || base.MachineId > (1<<machineIdBit) {
+	//machineIdPureMask 实际上使用 int32，这里仅在启动时调用，只发生 1 次类型转换
+	if base.MachineId < 0 || base.MachineId > int32(machineIdPureMask) {
 		return false
 	}
 	return true
 }
 
 func GenId() (id int64, code int32, err error) {
-	var now = time.Now()
-	var nowTime = now.Unix()*1000 + int64(now.Nanosecond()/1e6) - base.ZeroTime
-	if nowTime >= (1 << timeBit) {
+	var nowTime = time.Since(zeroTime).Milliseconds()
+	if nowTime >= timePureMask {
 		//时间戳超过 41 bit
 		return -1, base.CODE_TIME_OVERFLOW, nil
 	}
+	//未设置过lasTime时，假定机器时钟正常，无偏移量
+	var timeDiff int64
+	timeDiff = nowTime - lastTime
+	if timeDiff < -5000 {
+		//时钟差距超过5秒，认为时钟不同步
+		log.WithField("timeDiff", timeDiff).Warn("timeDiff is too large")
+	}
 	seqNumLock.Lock()
-	if nowTime != lastTime {
-		seqNum = 0
-		lastTime = nowTime
-	} else {
+	if timeDiff < 0 {
+		//时钟延迟
+		log.WithFields(log.Fields{"timeDiff": timeDiff, "now": nowTime, "last": lastTime}).Warn("time clock delay")
+		for timeDiff < 0 {
+			nowTime = time.Since(zeroTime).Milliseconds()
+			timeDiff = nowTime - lastTime
+		}
+	}
+	if timeDiff == 0 {
 		seqNum++
+		for seqNum > seqNumPureMask {
+			return -1, base.CODE_SEQ_NUM_OVERFLOW, nil
+		}
 	}
-	var curSeqNum = seqNum
+	if timeDiff > 0 {
+		lastTime = nowTime
+		seqNum = 0
+	}
+	id = int64(nowTime<<timeOffset) | machineIdValue | seqNum
 	seqNumLock.Unlock()
-	if seqNum > (1 << seqNumBit) {
-		return -1, base.CODE_SEQ_NUM_OVERFLOW, nil
-	}
-	return int64(nowTime<<timeOffset) + int64(base.MachineId<<machineIdOffset) + curSeqNum, base.CODE_SUCCESS, nil
+	return id, base.CODE_SUCCESS, nil
 }
