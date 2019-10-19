@@ -2,13 +2,23 @@ package utils
 
 import (
 	"database/sql"
+	"github.com/gihnius/gomemoize/src/memoize"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/nextbin/go-gen-id/src/base"
 	"github.com/nextbin/go-gen-id/src/domain"
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	cacheTimeoutSec = 60 * 10
+)
+
 func QueryWhitelist() (whitelists []domain.Whitelist) {
+	return memoize.Memoize("queryWhitelist", queryWhitelist, cacheTimeoutSec).([]domain.Whitelist)
+}
+
+func queryWhitelist() interface{} {
+	ret := []domain.Whitelist{}
 	db, err := sql.Open("mysql", base.MysqlDataSourceNaming)
 	if err != nil {
 		log.Fatal("Connect to mysql server error", err)
@@ -18,11 +28,11 @@ func QueryWhitelist() (whitelists []domain.Whitelist) {
 	defer rows.Close()
 	if err != nil {
 		log.Error(err)
-		return
+		return ret
 	}
 	if rows.Err() != nil {
 		log.Error(rows.Err())
-		return
+		return ret
 	}
 	for rows.Next() {
 		whitelist := domain.Whitelist{}
@@ -30,7 +40,7 @@ func QueryWhitelist() (whitelists []domain.Whitelist) {
 		if err != nil {
 			log.Error("Scan error", err)
 		}
-		whitelists = append(whitelists, whitelist)
+		ret = append(ret, whitelist)
 	}
-	return
+	return ret
 }
